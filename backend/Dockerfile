@@ -1,4 +1,4 @@
-FROM node:buster
+FROM node:latest
 
 WORKDIR /app
 

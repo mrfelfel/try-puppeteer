@@ -63,8 +63,11 @@ async function runCodeInSandbox(code, token = null) {
   });
 
   const Rayconnect = require("rayconnect-client").default;
+  const axios = require("axios").default
 
   vm.freeze(Rayconnect, "Rayconnect");
+  vm.freeze(axios, "axios");
+
   vm.freeze(writeLog, "writeLog");
 
   return vm.run(code);
