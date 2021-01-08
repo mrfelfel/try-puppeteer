@@ -121,18 +121,18 @@ section footer {
   justify-content: space-between;
   padding-left: 0;
 }
-.puppeteer-results {
+.rayconnect-results {
   position: relative;
-  min-height: 0; /* github.com/ebidel/try-puppeteer/issues/36*/
+  min-height: 0; /* github.com/ebidel/try-rayconnect/issues/36*/
 }
-.puppeteer-results-top {
+.rayconnect-results-top {
   height: 100%;
   position: relative;
 }
-.puppeteer-results-top::after {
+.rayconnect-results-top::after {
   content: '';
   position: absolute;
-  background: url('https://user-images.githubusercontent.com/10379601/29446482-04f7036a-841f-11e7-9872-91d1fc2ea683.png') no-repeat 50% 50%;
+  background: url('/images/js.svg') no-repeat 50% 50%;
   background-size: 45%;
   height: 100%;
   width: 100%;
@@ -141,7 +141,7 @@ section footer {
   opacity: 0.05;
   z-index: -1;
 }
-.puppeteer-result-log, .puppeteer-result-output {
+.rayconnect-result-log, .rayconnect-result-output {
   padding: var(--default-padding);
   padding-top: 0;
   position: relative;
@@ -150,15 +150,15 @@ section footer {
   overflow: auto;
   display: block;
 }
-.puppeteer-result-output img {
+.rayconnect-result-output img {
   max-width: 100%;
 }
-.puppeteer-result-output iframe {
+.rayconnect-result-output iframe {
   border: 0;
   height: 100%;
   width: 100%;
 }
-.puppeteer-results-panel {
+.rayconnect-results-panel {
   transform: translateY(100%);
   transition: transform 300ms ease-in-out;
   height: 50%;
@@ -169,10 +169,10 @@ section footer {
   bottom: 0;
   background-color: #fff;
 }
-.puppeteer-results-panel.active {
+.rayconnect-results-panel.active {
   transform: none;
 }
-.puppeteer-result-label {
+.rayconnect-result-label {
   font-size: 24px;
   color: var(--shell-color);
   text-transform: uppercase;

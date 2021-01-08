@@ -5,9 +5,6 @@
   "main": "index.js",
   "author": "Eric Bidelman <ebidel@gmail.com>",
   "license": "Apache-2.0",
-  "engines": {
-    "node": ">=8"
-  },
   "scripts": {
     "start": "node server.js",
     "serve": "PORT=8081 node server.js",

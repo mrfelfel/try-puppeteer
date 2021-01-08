@@ -20,12 +20,12 @@
 'use strict';
 
 const BACKEND_HOST = (location.hostname === 'localhost' ?
-  'http://localhost:8080' : 'https://backend-dot-try-puppeteer.appspot.com');
+  'http://localhost:8080' : 'https://backend-dot-try-rayconnect.appspot.com');
 
 const textarea = document.querySelector('#code-editor-area');
-const puppeteerOutput = document.querySelector('.puppeteer-result-output');
-const puppeteerLog = document.querySelector('.puppeteer-result-log');
-const resultsPanel = document.querySelector('.puppeteer-results-panel');
+const rayconnectOutput = document.querySelector('.rayconnect-result-output');
+const rayconnectLog = document.querySelector('.rayconnect-result-log');
+const resultsPanel = document.querySelector('.rayconnect-results-panel');
 const examplesSelect = document.querySelector('#examples_list');
 
 const editor = CodeMirror.fromTextArea(textarea, {
@@ -41,7 +41,7 @@ const editor = CodeMirror.fromTextArea(textarea, {
     'Tab': 'autocomplete'
   },
   keyMap: 'sublime',
-  hintOptions: {hint: puppeteerHint, completeSingle: true}
+  hintOptions: {hint: rayconnectHint, completeSingle: true}
 });
 
 // editor.on('drop', (cm, change) => {
@@ -53,10 +53,10 @@ const editor = CodeMirror.fromTextArea(textarea, {
 //   CodeMirror.showHint(cm, CodeMirror.hint.javascript);
 // });
 
-function puppeteerHint(cm) {
+function rayconnectHint(cm) {
   const jsList = CodeMirror.hint.javascript(editor).list;
-  const puppeteerList = [];//['browser', 'puppeteer'];
-  const dictionary = [...jsList, ...puppeteerList];
+  const rayconnectList = [];//['browser', 'rayconnect'];
+  const dictionary = [...jsList, ...rayconnectList];
 
   const cur = editor.getCursor();
   const curLine = editor.getLine(cur.line);
@@ -79,7 +79,7 @@ function puppeteerHint(cm) {
 
 // CodeMirror.commands.autocomplete = (cm) => {
 //   // cm.showHint(cm, CodeMirror.hint.javascript);
-//   cm.showHint({hint: CodeMirror.hint.puppeteerHint, completeSingle: true});
+//   cm.showHint({hint: CodeMirror.hint.rayconnectHint, completeSingle: true});
 // };
 
 // editor.on('keyup', (cm, e) => {
@@ -143,7 +143,7 @@ async function switchToExample(filename) {
   // }
   code = code.replace(/["']use strict["'];/, ''); // Remove.
   code = code.replace(/^\/\*\*((\n|.)*)Copyright \d{4}(\n|.)*?\*\//g, ''); // Remove copyright.
-  code = code.replace(/^((.*)require\('puppeteer'\);).*$/gm, ''); // Comment out puppeteer require.
+  code = code.replace(/^((.*)require\('rayconnect-client'\);).*$/gm, ''); // Comment out rayconnect require.
   code = code.replace(/\(\s*async\s*\(\s*\)\s*=>\s*{\s*$/gm, ''); // remove start of async IIFE.
   code = code.replace(/^}\)\(\);\s*$/gm, ''); // remove end of async IIFE.
 
@@ -160,8 +160,8 @@ function isWorking(button, working = true) {
   button.disabled = working;
 
   if (working) {
-    puppeteerOutput.textContent = '';
-    puppeteerLog.textContent = '';
+    rayconnectOutput.textContent = '';
+    rayconnectLog.textContent = '';
   }
 }
 
@@ -178,9 +178,9 @@ runButton.addEventListener('click', e => {
 
     if (json.errors) {
       if (typeof json.errors === 'string') {
-        puppeteerLog.textContent = json.errors;
+        rayconnectLog.textContent = json.errors;
       } else {
-        puppeteerLog.textContent = JSON.stringify(json.errors);
+        rayconnectLog.textContent = JSON.stringify(json.errors);
       }
       return;
     }
@@ -192,21 +192,21 @@ runButton.addEventListener('click', e => {
       if (blob.type.match(/^image/)) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(blob);
-        puppeteerOutput.appendChild(img);
+        rayconnectOutput.appendChild(img);
       } else if (blob.type.match(/pdf$/)) {
         const iframe = document.createElement('iframe');
         iframe.src = URL.createObjectURL(blob);
-        puppeteerOutput.appendChild(iframe);
+        rayconnectOutput.appendChild(iframe);
       }
       resultsPanel.classList.add('active');
     } else {
       resultsPanel.classList.remove('active');
-      puppeteerOutput.textContent = json.result || '';
+      rayconnectOutput.textContent = json.result || '';
     }
 
-    puppeteerLog.textContent = json.log;
+    rayconnectLog.textContent = json.log;
   }).catch(err => {
-    puppeteerLog.textContent = err;
+    rayconnectLog.textContent = err;
     isWorking(e.target, false);
     resultsPanel.classList.remove('active');
   });
