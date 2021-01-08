@@ -10,10 +10,14 @@
     "serve": "docker run --rm -d -p 8080:8080  --name try-rayconnect try-rayconnect-docker"
   },
   "dependencies": {
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
     "express": "^4.16.4",
     "mime": "^2.3.1",
     "multer": "^1.4.1",
+    "node-ssh": "^11.1.1",
     "rayconnect-client": "^0.11.6-pony-auth-problem-fixed",
+    "uuid": "^8.3.2",
     "vm2": "^3.6.4"
   }
 }

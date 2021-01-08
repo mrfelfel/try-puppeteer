@@ -7,6 +7,6 @@ RUN npm i
 
 COPY . .
 
-EXPOSE 8080
+EXPOSE 2006
 
 CMD [ "npm", "start"]

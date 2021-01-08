@@ -2,16 +2,23 @@
 
 const fs = require("fs");
 const express = require("express");
-const Rayconnect = require("rayconnect-client").default
+const cookieParser = require("cookie-parser");
+
+const cors = require("cors");
+const Rayconnect = require("rayconnect-client").default;
+
 // const {spawn} = require('child_process');
 const mime = require("mime");
 const upload = require("multer")();
 const { VM } = require("vm2");
+const { v4: uuidv4 } = require("uuid");
 
 let EXAMPLES_CACHE = [];
 let unhandledRejectionHandlerAdded = false;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const logses = {};
 
 // Async route handlers are wrapped with this to catch rejected promise errors.
 const catchAsyncErrors = (fn) => (req, res, next) => {
@@ -44,9 +51,9 @@ listExamples(); // Populate when server fires up.
  * @param {!Array<string>} log
  * @return {!Promise<!Object>}
  */
-async function buildResponse( log) {
+async function buildResponse(log) {
   const respObj = { log: log.join("\n") };
-  
+
   return respObj;
 }
 
@@ -56,20 +63,21 @@ async function buildResponse( log) {
  *     user's code launches Chrome if not provided.
  * @return {!Promise}
  */
-async function runCodeInSandbox(code, browser = null) {
+async function runCodeInSandbox(code, token = null) {
   if (code.match(/file:/g) || code.match(/metadata\.google\.internal/g)) {
     throw new Error("Sorry. Cannot access that URL.");
   }
+
+  logses[token] = [];
 
   const lines = code.split("\n");
 
   code = lines.join("\n");
 
   code = `
-    const log = [];
 
     // Define inline functions and capture user console logs.
-    const logger = (...args) => log.push(args);
+    const logger = (args) => writeLog('${token}', args);
     console.log = logger;
     console.info = logger;
     console.warn = logger;
@@ -79,22 +87,31 @@ async function runCodeInSandbox(code, browser = null) {
     // Wrap user code in an async function so async/await can be used out of the box.
     (async() => {
       ${code} // user's code
-      return ${buildResponse.toString()}(log); // inline function, call it
+      return ${buildResponse.toString()}(readLog('${token}')); // inline function, call it
     })();
   `;
 
   // Sandbox user code. Provide new context with limited scope.
   const sandbox = {
-    Rayconnect,
     mime,
+    logses,
     setTimeout,
   };
 
-  return new VM({
+  const vm = new VM({
     timeout: 60 * 1000,
     sandbox,
-  }).run(code);
+  });
+
+  vm.freeze(Rayconnect, "Rayconnect");
+  vm.freeze(writeLog, "writeLog");
+  vm.freeze(readLog, "readLog");
+
+  return vm.run(code);
 }
+
+const writeLog = (token, args) => logses[token].push(args);
+const readLog = (token) => logses[token];
 
 function errorHandler(err, req, res, next) {
   if (res.headersSent) {
@@ -106,17 +123,10 @@ function errorHandler(err, req, res, next) {
 
 const app = express();
 
+app.use(cookieParser());
+
 // CORSs setup comes before static handler to examples can be loaded x-origin.
-app.use(function cors(req, res, next) {
-  const dev = req.hostname.includes("localhost");
-  const origin = dev
-    ? "http://localhost:8081"
-    : "https://try-puppeteer.appspot.com";
-  res.header("Access-Control-Allow-Origin", origin);
-  // res.header('Content-Type', 'application/json;charset=utf-8');
-  // res.header('Cache-Control', 'private, max-age=300');
-  next(); // pass control on to middleware/route.
-});
+app.use(cors());
 
 app.use(express.static("./rayjs/examples/"));
 
@@ -130,6 +140,26 @@ app.get(
     res.status(200).json(await listExamples());
   })
 );
+
+app.get(
+  "/token",
+  catchAsyncErrors(async (req, res, next) => {
+    res.status(200).json({
+      token: uuidv4(),
+    });
+  })
+);
+
+app.get("/logs", (req, res) => {
+  if (!req.headers.token) {
+    return res.status(200).json({
+      log: [],
+    });
+  }
+  res.status(200).json({
+    log: readLog(req.headers.token),
+  });
+});
 
 app.post(
   "/run",
@@ -148,7 +178,7 @@ app.post(
     }
 
     try {
-      const result = await runCodeInSandbox(code, browser); // await runCodeUsingSpawn(code);
+      const result = await runCodeInSandbox(code, req.headers.token); // await runCodeUsingSpawn(code);
       if (!res.headersSent) {
         res.status(200).send(result);
       }
@@ -165,4 +195,3 @@ app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);
   console.log("Press Ctrl+C to quit.");
 });
-

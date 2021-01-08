@@ -17,205 +17,247 @@
 /* global document fetch location Blob FormData URL CodeMirror */
 
 (() => {
-'use strict';
+  "use strict";
 
-const BACKEND_HOST = (location.hostname === 'localhost' ?
-  'http://localhost:8080' : 'https://backend-dot-try-rayconnect.appspot.com');
+  const BACKEND_HOST =
+    location.hostname === "localhost"
+      ? "http://localhost:8080"
+      : "https://backend-dot-try-rayconnect.appspot.com";
 
-const textarea = document.querySelector('#code-editor-area');
-const rayconnectOutput = document.querySelector('.rayconnect-result-output');
-const rayconnectLog = document.querySelector('.rayconnect-result-log');
-const resultsPanel = document.querySelector('.rayconnect-results-panel');
-const examplesSelect = document.querySelector('#examples_list');
+  const textarea = document.querySelector("#code-editor-area");
+  const rayconnectOutput = document.querySelector(".rayconnect-result-output");
+  const rayconnectLog = document.querySelector(".rayconnect-result-log");
+  const resultsPanel = document.querySelector(".rayconnect-results-panel");
+  const examplesSelect = document.querySelector("#examples_list");
 
-const editor = CodeMirror.fromTextArea(textarea, {
-  lineNumbers: true,
-  mode: {name: 'javascript', globalVars: true},
-  theme: 'monokai',
-  lineWrapping: true,
-  allowDropFileTypes: ['text/javascript'],
-  autoCloseBrackets: true,
-  matchBrackets: true,
-  extraKeys: {
-    'Ctrl-Space': 'autocomplete',
-    'Tab': 'autocomplete'
-  },
-  keyMap: 'sublime',
-  hintOptions: {hint: rayconnectHint, completeSingle: true}
-});
-
-// editor.on('drop', (cm, change) => {
-//   editor.value = '';
-// });
-
-// editor.on('inputRead', (cm, change) => {
-//   // hinting logic
-//   CodeMirror.showHint(cm, CodeMirror.hint.javascript);
-// });
-
-function rayconnectHint(cm) {
-  const jsList = CodeMirror.hint.javascript(editor).list;
-  const rayconnectList = [];//['browser', 'rayconnect'];
-  const dictionary = [...jsList, ...rayconnectList];
-
-  const cur = editor.getCursor();
-  const curLine = editor.getLine(cur.line);
-  let start = cur.ch;
-  let end = start;
-  while (end < curLine.length && /[\w$]+/.test(curLine.charAt(end))) {
-    ++end;
-  }
-  while (start && /[\w$]+/.test(curLine.charAt(start - 1))) {
-    --start;
-  }
-  const curWord = curLine.slice(start, end);
-  const regex = new RegExp('^' + curWord, 'i');
-  return {
-    list: dictionary.filter(item => item.match(regex)).sort(),
-    from: CodeMirror.Pos(cur.line, start), // eslint-disable-line new-cap
-    to: CodeMirror.Pos(cur.line, end) // eslint-disable-line new-cap
+  const creds = {
+    token: "",
   };
-}
-
-// CodeMirror.commands.autocomplete = (cm) => {
-//   // cm.showHint(cm, CodeMirror.hint.javascript);
-//   cm.showHint({hint: CodeMirror.hint.rayconnectHint, completeSingle: true});
-// };
-
-// editor.on('keyup', (cm, e) => {
-//   const arrows = [37, 38, 39, 40];
-//   if (arrows.indexOf(e.keyCode) < 0) {
-//     editor.execCommand('autocomplete');
-//     // CodeMirror.showHint(cm, CodeMirror.hint.javascript);
-//   }
-// });
-
-// editor.on('beforeChange', (cm, change) => {
-//   if (change.from.line === 0) {
-//     change.cancel();
-//   }
-// });
-
-// editor.on('beforeSelectionChange', (cm, obj)=> {
-//   if (obj.ranges[0].anchor.line === 0) {
-//     cm.setOption('cursorBlinkRate', -1);
-//     // editor.setCursor({line: 3, ch: 0});
-//     // editor.focus();
-//   } else {
-//     cm.setOption('cursorBlinkRate', 530);
-//   }
-// });
-// editor.markText({line: 0, ch: 0}, {line: 1}, {readOnly: true});
-// editor.addLineClass(0, 'wrap', 'readonly-line');
-
-async function runCode() {
-  let code = editor.getValue();
-
-  const formData = new FormData();
-  formData.append('file', new Blob([code], {type: 'text/javascript'}));
-
-  if (ga) {
-    ga('send', 'event', 'code', 'run');
-  }
-
-  const resp = await fetch(`${BACKEND_HOST}/run`, {method: 'POST', body: formData});
-  return await resp.json();
-}
-
-async function fetchExamples() {
-  const resp = await fetch(`${BACKEND_HOST}/examples`);
-  const list = await resp.json();
-  list.forEach(item => {
-    const option = document.createElement('option');
-    option.text = item;
-    examplesSelect.add(option);
+  const editor = CodeMirror.fromTextArea(textarea, {
+    lineNumbers: true,
+    mode: { name: "javascript", globalVars: true },
+    theme: "monokai",
+    lineWrapping: true,
+    allowDropFileTypes: ["text/javascript"],
+    autoCloseBrackets: true,
+    matchBrackets: true,
+    extraKeys: {
+      "Ctrl-Space": "autocomplete",
+      Tab: "autocomplete",
+    },
+    keyMap: "sublime",
+    hintOptions: { hint: rayconnectHint, completeSingle: true },
   });
-}
 
-async function switchToExample(filename) {
-  const resp = await fetch(`${BACKEND_HOST}/${filename}`);
-  let code = await resp.text();
+  // editor.on('drop', (cm, change) => {
+  //   editor.value = '';
+  // });
 
-  // console.log(editor.getDoc())
-  // const match = code.match(/\(async\(\) => {((\n|.)*)}\)\(\)/, '');
-  // if (match) {
-  //   code = match[1].trim();
-  // }
-  code = code.replace(/["']use strict["'];/, ''); // Remove.
-  code = code.replace(/^\/\*\*((\n|.)*)Copyright \d{4}(\n|.)*?\*\//g, ''); // Remove copyright.
-  code = code.replace(/^((.*)require\('rayconnect-client'\);).*$/gm, ''); // Comment out rayconnect require.
-  code = code.replace(/\(\s*async\s*\(\s*\)\s*=>\s*{\s*$/gm, ''); // remove start of async IIFE.
-  code = code.replace(/^}\)\(\);\s*$/gm, ''); // remove end of async IIFE.
+  // editor.on('inputRead', (cm, change) => {
+  //   // hinting logic
+  //   CodeMirror.showHint(cm, CodeMirror.hint.javascript);
+  // });
 
-  editor.getDoc().setValue(code.trim());
+  function rayconnectHint(cm) {
+    const jsList = CodeMirror.hint.javascript(editor).list;
+    const rayconnectList = []; //['browser', 'rayconnect'];
+    const dictionary = [...jsList, ...rayconnectList];
 
-  if (ga) {
-    ga('send', 'event', 'code', 'select_example', filename);
+    const cur = editor.getCursor();
+    const curLine = editor.getLine(cur.line);
+    let start = cur.ch;
+    let end = start;
+    while (end < curLine.length && /[\w$]+/.test(curLine.charAt(end))) {
+      ++end;
+    }
+    while (start && /[\w$]+/.test(curLine.charAt(start - 1))) {
+      --start;
+    }
+    const curWord = curLine.slice(start, end);
+    const regex = new RegExp("^" + curWord, "i");
+    return {
+      list: dictionary.filter((item) => item.match(regex)).sort(),
+      from: CodeMirror.Pos(cur.line, start), // eslint-disable-line new-cap
+      to: CodeMirror.Pos(cur.line, end), // eslint-disable-line new-cap
+    };
   }
-}
 
-function isWorking(button, working = true) {
-  const spinner = document.querySelector('.loading-spinner');
-  spinner.classList.toggle('active', working);
-  button.disabled = working;
+  // CodeMirror.commands.autocomplete = (cm) => {
+  //   // cm.showHint(cm, CodeMirror.hint.javascript);
+  //   cm.showHint({hint: CodeMirror.hint.rayconnectHint, completeSingle: true});
+  // };
 
-  if (working) {
-    rayconnectOutput.textContent = '';
-    rayconnectLog.textContent = '';
-  }
-}
+  // editor.on('keyup', (cm, e) => {
+  //   const arrows = [37, 38, 39, 40];
+  //   if (arrows.indexOf(e.keyCode) < 0) {
+  //     editor.execCommand('autocomplete');
+  //     // CodeMirror.showHint(cm, CodeMirror.hint.javascript);
+  //   }
+  // });
 
-examplesSelect.addEventListener('change', e => {
-  switchToExample(e.target.value);
-});
+  // editor.on('beforeChange', (cm, change) => {
+  //   if (change.from.line === 0) {
+  //     change.cancel();
+  //   }
+  // });
 
-const runButton = document.querySelector('#run_button');
-runButton.addEventListener('click', e => {
-  isWorking(e.target, true);
+  // editor.on('beforeSelectionChange', (cm, obj)=> {
+  //   if (obj.ranges[0].anchor.line === 0) {
+  //     cm.setOption('cursorBlinkRate', -1);
+  //     // editor.setCursor({line: 3, ch: 0});
+  //     // editor.focus();
+  //   } else {
+  //     cm.setOption('cursorBlinkRate', 530);
+  //   }
+  // });
+  // editor.markText({line: 0, ch: 0}, {line: 1}, {readOnly: true});
+  // editor.addLineClass(0, 'wrap', 'readonly-line');
 
-  runCode().then(json => {
-    isWorking(e.target, false);
+  async function runCode() {
+    let code = editor.getValue();
 
-    if (json.errors) {
-      if (typeof json.errors === 'string') {
-        rayconnectLog.textContent = json.errors;
-      } else {
-        rayconnectLog.textContent = JSON.stringify(json.errors);
-      }
-      return;
+    const formData = new FormData();
+    formData.append("file", new Blob([code], { type: "text/javascript" }));
+
+    if (ga) {
+      ga("send", "event", "code", "run");
     }
 
-    // Screenshot/pdf file response.
-    if (json.result) {
-      const uintArray = new Uint8Array(json.result.buffer.data);
-      const blob = new Blob([uintArray], {type: json.result.type});
-      if (blob.type.match(/^image/)) {
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(blob);
-        rayconnectOutput.appendChild(img);
-      } else if (blob.type.match(/pdf$/)) {
-        const iframe = document.createElement('iframe');
-        iframe.src = URL.createObjectURL(blob);
-        rayconnectOutput.appendChild(iframe);
+    let logsLength = 0
+    setInterval(async () => {
+      const resp = await fetch(`${BACKEND_HOST}/logs`, {
+        method: "GET",
+        headers: {
+          token: creds.token,
+        },
+      });
+      const log = await resp.json();
+
+      if(log.log.length > logsLength){
+        logsLength = log.log.length
+        rayconnectLog.textContent = log.log.join('\n')
       }
-      resultsPanel.classList.add('active');
-    } else {
-      resultsPanel.classList.remove('active');
-      rayconnectOutput.textContent = json.result || '';
+     
+    }, 1000);
+
+    const resp = await fetch(`${BACKEND_HOST}/run`, {
+      method: "POST",
+      body: formData,
+      headers: {
+        token: creds.token,
+      },
+    });
+    return await resp.json();
+  }
+
+  async function fetchExamples() {
+    const resp = await fetch(`${BACKEND_HOST}/examples`, {
+      credentials: "same-origin",
+    });
+    const list = await resp.json();
+    list.forEach((item) => {
+      const option = document.createElement("option");
+      option.text = item;
+      examplesSelect.add(option);
+    });
+  }
+
+  async function getToken() {
+    const resp = await fetch(`${BACKEND_HOST}/token`, {
+      credentials: "same-origin",
+    });
+    const data = await resp.json();
+
+    creds.token = data.token;
+  }
+
+  async function switchToExample(filename) {
+    const resp = await fetch(`${BACKEND_HOST}/${filename}`);
+    let code = await resp.text();
+
+    // console.log(editor.getDoc())
+    // const match = code.match(/\(async\(\) => {((\n|.)*)}\)\(\)/, '');
+    // if (match) {
+    //   code = match[1].trim();
+    // }
+    code = code.replace(/["']use strict["'];/, ""); // Remove.
+    code = code.replace(/^\/\*\*((\n|.)*)Copyright \d{4}(\n|.)*?\*\//g, ""); // Remove copyright.
+    code = code.replace(/^((.*)require\('rayconnect-client'\);).*$/gm, ""); // Comment out rayconnect require.
+    code = code.replace(/\(\s*async\s*\(\s*\)\s*=>\s*{\s*$/gm, ""); // remove start of async IIFE.
+    code = code.replace(/^}\)\(\);\s*$/gm, ""); // remove end of async IIFE.
+
+    editor.getDoc().setValue(code.trim());
+
+    if (ga) {
+      ga("send", "event", "code", "select_example", filename);
     }
+  }
 
-    rayconnectLog.textContent = json.log;
-  }).catch(err => {
-    rayconnectLog.textContent = err;
-    isWorking(e.target, false);
-    resultsPanel.classList.remove('active');
+  function isWorking(button, working = true) {
+    const spinner = document.querySelector(".loading-spinner");
+    spinner.classList.toggle("active", working);
+    button.disabled = working;
+
+    if (working) {
+      rayconnectOutput.textContent = "";
+      rayconnectLog.textContent = "";
+    }
+  }
+
+  examplesSelect.addEventListener("change", (e) => {
+    switchToExample(e.target.value);
   });
-});
 
-fetchExamples().then(() => {
-  const filename = 'screenshot.js';
-  // switchToExample(filename);
-  examplesSelect.value = filename;
-  examplesSelect.hidden = false;
-});
+  const runButton = document.querySelector("#run_button");
+  runButton.addEventListener("click", (e) => {
+    isWorking(e.target, true);
+
+    runCode()
+      .then((json) => {
+        isWorking(e.target, false);
+
+        if (json.errors) {
+          if (typeof json.errors === "string") {
+            rayconnectLog.textContent = json.errors;
+          } else {
+            rayconnectLog.textContent = JSON.stringify(json.errors);
+          }
+          return;
+        }
+
+        // Screenshot/pdf file response.
+        if (json.result) {
+          const uintArray = new Uint8Array(json.result.buffer.data);
+          const blob = new Blob([uintArray], { type: json.result.type });
+          if (blob.type.match(/^image/)) {
+            const img = document.createElement("img");
+            img.src = URL.createObjectURL(blob);
+            rayconnectOutput.appendChild(img);
+          } else if (blob.type.match(/pdf$/)) {
+            const iframe = document.createElement("iframe");
+            iframe.src = URL.createObjectURL(blob);
+            rayconnectOutput.appendChild(iframe);
+          }
+          resultsPanel.classList.add("active");
+        } else {
+          resultsPanel.classList.remove("active");
+          rayconnectOutput.textContent = json.result || "";
+        }
+
+        rayconnectLog.textContent = json.log;
+      })
+      .catch((err) => {
+        rayconnectLog.textContent = err;
+        isWorking(e.target, false);
+        resultsPanel.classList.remove("active");
+      });
+  });
+
+  getToken();
+  fetchExamples().then(() => {
+    const filename = "screenshot.js";
+    // switchToExample(filename);
+    examplesSelect.value = filename;
+    examplesSelect.hidden = false;
+  });
 })();
