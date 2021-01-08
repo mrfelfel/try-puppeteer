@@ -11,6 +11,9 @@ const { v4: uuidv4 } = require("uuid");
 let EXAMPLES_CACHE = [];
 let unhandledRejectionHandlerAdded = false;
 
+process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0
+
+
 const logses = {};
 
 // kill process with timeout
