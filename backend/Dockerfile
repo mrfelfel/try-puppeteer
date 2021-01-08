@@ -5,8 +5,8 @@ WORKDIR /app
 COPY package.json package.json
 RUN npm i
 
-RUN apk update \
-    && apk add openssl
+RUN apt-get -yqq install build-essential libssl-dev libffi-dev python3-pip python3-dev gnupg
+
 
 COPY . .
 
