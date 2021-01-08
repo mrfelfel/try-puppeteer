@@ -1,4 +1,4 @@
-FROM node:jessie
+FROM node:buster
 
 WORKDIR /app
 
