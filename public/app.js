@@ -49,6 +49,8 @@
     hintOptions: { hint: rayconnectHint, completeSingle: true },
   });
 
+  let interval = null;
+
   // editor.on('drop', (cm, change) => {
   //   editor.value = '';
   // });
@@ -113,6 +115,29 @@
   // editor.markText({line: 0, ch: 0}, {line: 1}, {readOnly: true});
   // editor.addLineClass(0, 'wrap', 'readonly-line');
 
+  async function loadLogs(button) {
+    let logsLength = 0;
+    
+    interval = setInterval(async () => {
+      try {
+        const resp = await fetch(`${BACKEND_HOST}/logs`, {
+          method: "GET",
+          headers: {
+            token: creds.token,
+          },
+        });
+
+        const log = await resp.json();
+
+        if (log.log.length > logsLength) {
+          logsLength = log.log.length;
+          rayconnectLog.textContent = log.log.join("\n");
+        }
+      } catch (error) {
+        throw error;
+      }
+    }, 1000);
+  }
   async function runCode() {
     let code = editor.getValue();
 
@@ -123,22 +148,7 @@
       ga("send", "event", "code", "run");
     }
 
-    let logsLength = 0
-    setInterval(async () => {
-      const resp = await fetch(`${BACKEND_HOST}/logs`, {
-        method: "GET",
-        headers: {
-          token: creds.token,
-        },
-      });
-      const log = await resp.json();
-
-      if(log.log.length > logsLength){
-        logsLength = log.log.length
-        rayconnectLog.textContent = log.log.join('\n')
-      }
-     
-    }, 1000);
+    await getToken();
 
     const resp = await fetch(`${BACKEND_HOST}/run`, {
       method: "POST",
@@ -212,6 +222,12 @@
   runButton.addEventListener("click", (e) => {
     isWorking(e.target, true);
 
+    if (interval) {
+      console.log('cleared')
+      clearInterval(interval);
+    }
+    loadLogs(e.target);
+
     runCode()
       .then((json) => {
         isWorking(e.target, false);
@@ -244,7 +260,7 @@
           rayconnectOutput.textContent = json.result || "";
         }
 
-        rayconnectLog.textContent = json.log;
+        // rayconnectLog.textContent = json.log;
       })
       .catch((err) => {
         rayconnectLog.textContent = err;
@@ -253,7 +269,6 @@
       });
   });
 
-  getToken();
   fetchExamples().then(() => {
     const filename = "screenshot.js";
     // switchToExample(filename);
