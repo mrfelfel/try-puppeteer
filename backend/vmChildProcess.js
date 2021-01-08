@@ -1,6 +1,5 @@
 const { VM } = require("vm2");
 const mime = require("mime");
-const Rayconnect = require("rayconnect-client").default;
 
 process.on("message", (msg) => {
   console.log("Child process - message received");
@@ -62,6 +61,8 @@ async function runCodeInSandbox(code, token = null) {
     timeout: 60 * 1000,
     sandbox,
   });
+
+  const Rayconnect = require("rayconnect-client").default;
 
   vm.freeze(Rayconnect, "Rayconnect");
   vm.freeze(writeLog, "writeLog");
