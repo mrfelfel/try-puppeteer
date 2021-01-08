@@ -29,7 +29,6 @@ async function runCodeInSandbox(code, token = null) {
     throw new Error("Sorry. Cannot access that URL.");
   }
 
-
   const lines = code.split("\n");
 
   code = lines.join("\n");

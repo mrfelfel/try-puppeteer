@@ -22,7 +22,7 @@
   const BACKEND_HOST =
     location.hostname === "localhost"
       ? "http://localhost:8080"
-      : "https://backend-dot-try-rayconnect.appspot.com";
+      : "https://backend-rayconnect-sandbox.rayconnect.ir";
 
   const textarea = document.querySelector("#code-editor-area");
   const rayconnectOutput = document.querySelector(".rayconnect-result-output");
@@ -117,7 +117,7 @@
 
   async function loadLogs(button) {
     let logsLength = 0;
-    
+
     interval = setInterval(async () => {
       try {
         const resp = await fetch(`${BACKEND_HOST}/logs`, {
@@ -223,7 +223,7 @@
     isWorking(e.target, true);
 
     if (interval) {
-      console.log('cleared')
+      console.log("cleared");
       clearInterval(interval);
     }
     loadLogs(e.target);
@@ -270,7 +270,7 @@
   });
 
   fetchExamples().then(() => {
-    const filename = "screenshot.js";
+    const filename = "rayconnect.js";
     // switchToExample(filename);
     examplesSelect.value = filename;
     examplesSelect.hidden = false;

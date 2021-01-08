@@ -13,6 +13,13 @@ let unhandledRejectionHandlerAdded = false;
 
 const logses = {};
 
+// kill process with timeout
+function killTimeout(vmProcess) {
+  setTimeout(() => {
+    vmProcess.kill();
+  }, 120000);
+}
+
 // Async route handlers are wrapped with this to catch rejected promise errors.
 const catchAsyncErrors = (fn) => (req, res, next) => {
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -48,12 +55,19 @@ function errorHandler(err, req, res, next) {
   res.status(500).send({ errors: `Error running your code. ${err}` });
 }
 
+/**
+ * @param {code} code User code to run.
+ * @param {uuid} uuid user uuid for save logs and output
+ */
+
 function runCodeInFork(code, uuid) {
   const { fork } = require("child_process");
 
   const vmProcess = fork("vmChildProcess.js");
 
+  // make new log object
   logses[uuid] = [];
+
   vmProcess.send({
     func: "run",
     data: {
@@ -62,9 +76,7 @@ function runCodeInFork(code, uuid) {
     },
   });
 
-  setTimeout(() => {
-    vmProcess.kill();
-  }, 10000);
+  killTimeout(vmProcess);
   vmProcess.on("message", (msg) => {
     switch (msg.func) {
       case "logs":

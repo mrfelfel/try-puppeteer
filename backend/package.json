@@ -6,8 +6,7 @@
     "start2": "node --max_old_space_size=3072 server.js",
     "debug": "env DEBUG='puppeteer:*' node server.js",
     "build": "./build.sh",
-    "restart": "docker kill try-rayconnect; yarn build && yarn serve",
-    "serve": "docker run --rm -d -p 8080:8080  --name try-rayconnect try-rayconnect-docker"
+    "serve": "docker-compose up"
   },
   "dependencies": {
     "cookie-parser": "^1.4.5",

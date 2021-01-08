@@ -1,0 +1,37 @@
+version: "3.3"
+services:
+  try-rayconnect:
+    restart: always
+    build: ./backend
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tryrayconnect.entrypoints=websecure"
+      - "traefik.http.routers.tryrayconnect.rule=Host(`backend-rayconnect-sandbox.rayconnect.ir`)"
+      - "traefik.http.routers.tryrayconnect.tls.certresolver=myresolver"
+      - "traefik.http.services.tryrayconnect.loadbalancer.server.port=8080"
+      - "traefik.docker.network=web"
+    volumes: 
+      - "./backend:/app"
+  try-rayconnect-frontend:
+    restart: always
+    build: ./
+    networks:
+      - web
+    ports:
+      - 8081:8081
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tryrayconnectfrontend.entrypoints=websecure"
+      - "traefik.http.routers.tryrayconnectfrontend.rule=Host(`try-rayconnect.rayconnect.ir`)"
+      - "traefik.http.routers.tryrayconnectfrontend.tls.certresolver=myresolver"
+      - "traefik.http.services.tryrayconnectfrontend.loadbalancer.server.port=8081"
+      - "traefik.docker.network=web"
+    volumes: 
+      - ".:/app"
+
+networks:
+  web:
+    external: true
+

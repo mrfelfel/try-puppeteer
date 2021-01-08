@@ -6,12 +6,8 @@
   "author": "Eric Bidelman <ebidel@gmail.com>",
   "license": "Apache-2.0",
   "scripts": {
-    "start": "node server.js",
-    "serve": "PORT=8081 node server.js",
-    "build": "cd backend && yarn build",
-    "install-backend": "cd backend && yarn",
-    "deploy-backend": "gcloud app deploy backend/app.yaml --project try-puppeteer",
-    "deploy-frontend": "gcloud app deploy app.yaml --project try-puppeteer"
+    "start": "PORT=8081 node server.js",
+    "build": "cd backend && yarn build"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
