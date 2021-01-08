@@ -1,12 +1,13 @@
 const { VM } = require("vm2");
 const mime = require("mime");
 
-process.on("message", (msg) => {
+process.on("message", async (msg) => {
   console.log("Child process - message received");
 
   switch (msg.func) {
     case "run":
-      runCodeInSandbox(msg.data.code, msg.data.uuid);
+      const data = await runCodeInSandbox(msg.data.code, msg.data.uuid);
+      console.log(data)
       break;
 
     default:
