@@ -2,7 +2,7 @@
   "main": "server.js",
   "license": "Apache-2.0",
   "scripts": {
-    "start": "NODE_TLS_REJECT_UNAUTHORIZED=0 node server.js",
+    "start": "node server.js",
     "start2": "node --max_old_space_size=3072 server.js",
     "debug": "env DEBUG='puppeteer:*' node server.js",
     "build": "./build.sh",
