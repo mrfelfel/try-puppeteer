@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package.json package.json
 RUN npm i
+RUN apt-get install ca-certificates
 
 COPY . .
 
